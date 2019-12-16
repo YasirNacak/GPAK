@@ -5,41 +5,26 @@ using System.Text;
 
 namespace GPAK
 {
-    public class GPakFile
+    public class GPakWriter
     {
-        public char[] FormatName = {'G', 'P', 'A', 'K'};
-        public const byte MagicNumber = 78;
-        public const byte Version = 1;
-
         private readonly string _packageFilename;
-        private byte[] _fileContent;
 
         private BinaryWriter _fileWriter;
 
-        public GPakFile(string filename, FileMode mode)
+        public GPakWriter(string filename)
         {
-            _packageFilename = filename + ".GPAK";
+            _packageFilename = GPakUtil.GetPackageFileName(filename);
 
-            switch (mode)
+            bool doesFileExist = File.Exists(_packageFilename);
+
+            StartWriting();
+
+            if (!doesFileExist)
             {
-                case FileMode.Read:
-                    ReadFile();
-                    break;
-                case FileMode.Write:
-                    CreateFile();
-                    break;
+                WriteHeader();
             }
-        }
 
-        private void ReadFile()
-        {
-            _fileContent = File.ReadAllBytes(_packageFilename);
-            ParseContent();
-        }
-
-        private void ParseContent()
-        {
-
+            EndWriting();
         }
 
         private void StartWriting()
@@ -52,20 +37,11 @@ namespace GPAK
             _fileWriter.Close();
         }
 
-        private void CreateFile()
+        private void WriteHeader()
         {
-            bool doesFileExist = File.Exists(_packageFilename);
-
-            StartWriting();
-
-            if (!doesFileExist)
-            {
-                _fileWriter.Write(FormatName);
-                _fileWriter.Write(MagicNumber);
-                _fileWriter.Write(Version);
-            }
-
-            EndWriting();
+            _fileWriter.Write(GPakUtil.FormatName);
+            _fileWriter.Write(GPakUtil.MagicNumber);
+            _fileWriter.Write(GPakUtil.Version);
         }
 
         public void AddEntry(string filename)
