@@ -1,8 +1,7 @@
 {
   "profiles": {
     "GPAK.Editor": {
-      "commandName": "Project",
-      "commandLineArgs": "-r YASIR.GPAK"
+      "commandName": "Project"
     }
   }
 }

@@ -29,12 +29,14 @@ namespace GPAK
                 _packageBytes = ReadAllBytes();
                 _fileReader.Close();
 
-                _isPackageValid = IsHeaderValid();
-
-                if (_isPackageValid)
+                if (IsHeaderValid())
                 {
                     _entries = new List<GPakEntry>();
                     ReadEntries();
+                }
+                else
+                {
+                    throw new Exception("Invalid Header");
                 }
             }
             else
@@ -45,9 +47,10 @@ namespace GPAK
 
         public void DumpInfo()
         {
-            Console.WriteLine($@"File Name: {_packageFilename}");
+
+            /*Console.WriteLine($@"File Name: {_packageFilename}");
             Console.WriteLine($@"File Size: {_packageBytes.Length} bytes");
-            Console.WriteLine($@"Number of Entries: {_entries.Count}");
+            Console.WriteLine($@"Number of Entries: {_entries.Count}");*/
 
             Console.WriteLine("Entries:");
 
@@ -93,26 +96,7 @@ namespace GPAK
 
         private bool IsHeaderValid()
         {
-            bool isFormatNameCorrect = GPakUtil.GetByteRangeAsString(_packageBytes, 0, 3).Equals(GPakUtil.GetExtension());
-            bool isMagicNumberCorrect = GPakUtil.GetByteRangeAsInteger(_packageBytes, 4, 4).Equals(GPakUtil.MagicNumber);
-            bool isVersionCorrect = GPakUtil.GetByteRangeAsInteger(_packageBytes, 5, 5).Equals(GPakUtil.Version);
-
-            if (!isFormatNameCorrect)
-            {
-                throw new Exception("Format Name chunk is wrong.");
-            }
-
-            if (!isMagicNumberCorrect)
-            {
-                throw new Exception("Magic Number chunk is wrong.");
-            }
-
-            if (!isVersionCorrect)
-            {
-                throw new Exception("Incompatible GPAK version.");
-            }
-
-            return true;
+            return GPakUtil.GetByteRangeAsString(_packageBytes, 0, 3).Equals(GPakUtil.Header);
         }
 
         private void ReadEntries()

@@ -60,28 +60,27 @@ namespace GPAK.Editor
                 var gpReader = new GPakReader(packageFilename);
                 var dirToExtract = "";
 
-                switch (args.Length)
+                if (args.Length == 3)
                 {
-                    case 2:
-                        break;
-                    case 3:
-                        dirToExtract = args[2];
-                        gpReader.Extract(dirToExtract);
-                        break;
-                    default:
-                        PrintExtractModeInfo();
-                        return;
+                    dirToExtract = args[2];
                 }
 
-                gpReader.Extract(dirToExtract);
+                if (args.Length == 3 || args.Length == 2)
+                {
+                    gpReader.Extract(dirToExtract);
+                }
+                else
+                {
+                    PrintExtractModeInfo();
+                }
             }
             else
             {
                 PrintHelp();
-                return;
             }
 
-            Console.WriteLine("Operation Finished Successfully.");
+            // Console.WriteLine("Operation Finished Successfully.");
+            Console.ReadKey();
         }
 
         private static void PrintHelp()

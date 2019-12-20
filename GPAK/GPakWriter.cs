@@ -39,9 +39,7 @@ namespace GPAK
 
         private void WriteHeader()
         {
-            _fileWriter.Write(GPakUtil.FormatName);
-            _fileWriter.Write(GPakUtil.MagicNumber);
-            _fileWriter.Write(GPakUtil.Version);
+            _fileWriter.Write(GPakUtil.Header.ToCharArray());
         }
 
         public void AddEntry(string filename, bool shouldCompress)
