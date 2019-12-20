@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace GPAK
 {
@@ -56,17 +55,24 @@ namespace GPAK
             {
                 Console.WriteLine($@"ENTRY #{i + 1}");
                 Console.WriteLine($@"Name: {_entries[i].Name}");
+                Console.WriteLine($@"Is Compressed: {_entries[i].IsCompressed}");
                 Console.WriteLine($@"Size: {_entries[i].SizeInBytes} bytes");
-
             }
         }
 
-        public void Extract()
+        public void Extract(string toDirectory = "")
         {
+            if (toDirectory != "" && !Directory.Exists(toDirectory))
+            {
+                Directory.CreateDirectory(toDirectory);
+            }
+
             foreach (var entry in _entries)
             {
-                var writer = new BinaryWriter(File.Open(entry.Name, System.IO.FileMode.Create));
-                writer.Write(entry.Content);
+                var writer = new BinaryWriter(File.Open(Path.Combine(toDirectory, entry.Name), System.IO.FileMode.Create));
+
+                writer.Write(entry.IsCompressed ? GPakUtil.Decompress(entry.Content) : entry.Content);
+
                 writer.Close();
             }
         }
@@ -85,47 +91,11 @@ namespace GPAK
             return memStream.ToArray();
         }
 
-        private string GetByteRangeAsString(int startByte, int endByte)
-        {
-            var result = "";
-
-            for (int i = startByte; i <= endByte; i++)
-            {
-                result += (char)_packageBytes[i];
-            }
-
-            return result;
-        }
-
-        private int GetByteRangeAsInteger(int startByte, int endByte)
-        {
-            byte[] bytesToConvert = new byte[4];
-
-            int toConvertIndex = 0;
-
-            for (int i = startByte; i <= endByte; i++)
-            {
-                bytesToConvert[toConvertIndex] = _packageBytes[i];
-                toConvertIndex++;
-            }
-
-            return BitConverter.ToInt32(bytesToConvert, 0);
-        }
-
-        private byte[] RangeSubset(int startIndex, int length)
-        {
-            byte[] subset = new byte[length];
-
-            Array.Copy(_packageBytes, startIndex, subset, 0, length);
-
-            return subset;
-        }
-
         private bool IsHeaderValid()
         {
-            bool isFormatNameCorrect = GetByteRangeAsString(0, 3).Equals(GPakUtil.GetExtension());
-            bool isMagicNumberCorrect = GetByteRangeAsInteger(4, 4).Equals(GPakUtil.MagicNumber);
-            bool isVersionCorrect = GetByteRangeAsInteger(5, 5).Equals(GPakUtil.Version);
+            bool isFormatNameCorrect = GPakUtil.GetByteRangeAsString(_packageBytes, 0, 3).Equals(GPakUtil.GetExtension());
+            bool isMagicNumberCorrect = GPakUtil.GetByteRangeAsInteger(_packageBytes, 4, 4).Equals(GPakUtil.MagicNumber);
+            bool isVersionCorrect = GPakUtil.GetByteRangeAsInteger(_packageBytes, 5, 5).Equals(GPakUtil.Version);
 
             if (!isFormatNameCorrect)
             {
@@ -149,39 +119,26 @@ namespace GPAK
         {
             for (int i = GPakUtil.FirstEntryOffset; i < _packageBytes.Length; i++)
             {
-                var entryNameLength = GetByteRangeAsInteger(i, i);
-                var entryName = GetByteRangeAsString(i + 1, i + entryNameLength);
-                var entryContentSize = GetByteRangeAsInteger(i + entryNameLength + 1, i + entryNameLength + 4);
-                var entryContent = RangeSubset(i + entryNameLength + 5, entryContentSize);
+                var entryNameLength = 
+                    GPakUtil.GetByteRangeAsInteger(_packageBytes, i, i);
+                
+                var entryName = 
+                    GPakUtil.GetByteRangeAsString(_packageBytes, i + 1, i + entryNameLength);
+                
+                var compressedFlag =
+                    GPakUtil.GetByteRangeAsString(_packageBytes, i + entryNameLength + 1, i + entryNameLength + 1);
 
-                // TODO (yasir): remove when you are sure that reading works correctly
-                if(false)
-                {
-                    Console.WriteLine($@"Entry Name Length is at Bytes {i} - {i}");
-                    Console.WriteLine($@"Entry Name is at Bytes {i + 1} - {i + entryNameLength}");
-                    Console.WriteLine($@"Entry Content Length is at Bytes {i + entryNameLength + 1} - {i + entryNameLength + 4}");
-                    Console.WriteLine($@"Entry Content is at Bytes {i + entryNameLength + 5} - {i + entryNameLength + 5 + entryContentSize - 1}");
-                    Console.WriteLine("=============================================");
-                    Console.WriteLine($@"Entry Name Length: {entryNameLength}");
-                    Console.WriteLine($@"Entry Name: {entryName}");
-                    Console.WriteLine($@"Entry Content Size: {entryContentSize}");
-                    Console.WriteLine("=================END ENTRY===================");
+                var entryContentSize = 
+                    GPakUtil.GetByteRangeAsInteger(_packageBytes, i + entryNameLength + 2, i + entryNameLength + 5);
+                
+                var entryContent = 
+                    GPakUtil.GetByteRangeSubset(_packageBytes, i + entryNameLength + 6, entryContentSize);
 
-                    if (entryContentSize < 50)
-                    {
-                        Console.Write("!!!");
-                        for (int j = 0; j < entryContent.Length; j++)
-                        {
-                            Console.Write((char)entryContent[j]);
-                        }
-                        Console.Write("!!!");
-                        Console.WriteLine();
-                    }
-                }
+                i = i + entryNameLength + 5 + entryContentSize;
 
-                i = i + entryNameLength + 4 + entryContentSize;
+                var isCompressed = compressedFlag == "C";
 
-                _entries.Add(new GPakEntry(entryNameLength, entryName, entryContentSize, entryContent));
+                _entries.Add(new GPakEntry(entryNameLength, entryName, entryContentSize, entryContent, isCompressed));
             }
         }
     }

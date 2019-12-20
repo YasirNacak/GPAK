@@ -2,17 +2,19 @@
 {
     public class GPakEntry
     {
-        public int NameLength;
-        public string Name;
-        public int SizeInBytes;
-        public byte[] Content;
+        public int NameLength { get; }
+        public string Name { get; }
+        public int SizeInBytes { get; }
+        public byte[] Content { get; }
+        public bool IsCompressed { get; }
 
-        public GPakEntry(int nameLength, string name, int sizeInBytes, byte[] content)
+        public GPakEntry(int nameLength, string name, int sizeInBytes, byte[] content, bool isCompressed)
         {
             NameLength = nameLength;
             Name = name;
             SizeInBytes = sizeInBytes;
             Content = content;
+            IsCompressed = isCompressed;
         }
     }
 }

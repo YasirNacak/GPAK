@@ -20,18 +20,26 @@ namespace GPAK.Editor
 
             if (args[0].Equals("-w"))
             {
-                if (args.Length != 3)
+                if (args.Length != 4)
                 {
                     PrintWriteModeInfo();
                     return;
                 }
 
-                var packageFileName = args[1];
+                if (args[1] != "-c" && args[1] != "-n")
+                {
+                    PrintWriteModeInfo();
+                    return;
+                }
 
-                var inputFileName = args[2];
+                bool shouldCompress = args[1] == "-c";
+
+                var packageFileName = args[2];
+
+                var inputFileName = args[3];
 
                 var gpWriter = new GPakWriter(packageFileName);
-                gpWriter.AddEntry(inputFileName);
+                gpWriter.AddEntry(inputFileName, shouldCompress);
             }
             else if (args[0].Equals("-r"))
             {
@@ -48,16 +56,24 @@ namespace GPAK.Editor
             }
             else if (args[0].Equals("-x"))
             {
-                if (args.Length != 2)
+                var packageFilename = args[1];
+                var gpReader = new GPakReader(packageFilename);
+                var dirToExtract = "";
+
+                switch (args.Length)
                 {
-                    PrintExtractModeInfo();
-                    return;
+                    case 2:
+                        break;
+                    case 3:
+                        dirToExtract = args[2];
+                        gpReader.Extract(dirToExtract);
+                        break;
+                    default:
+                        PrintExtractModeInfo();
+                        return;
                 }
 
-                var packageFileName = args[1];
-
-                var gpReader = new GPakReader(packageFileName);
-                gpReader.Extract();
+                gpReader.Extract(dirToExtract);
             }
             else
             {
@@ -78,7 +94,7 @@ namespace GPAK.Editor
 
         private static void PrintWriteModeInfo()
         {
-            Console.WriteLine("[-w] [package filename] [input filename] For writing input file to package file.");
+            Console.WriteLine("[-w] [-c (compress)/-n (no compression)] [package filename] [input filename] For writing input file to package file.");
         }
 
         private static void PrintReadModeInfo()

@@ -44,7 +44,7 @@ namespace GPAK
             _fileWriter.Write(GPakUtil.Version);
         }
 
-        public void AddEntry(string filename)
+        public void AddEntry(string filename, bool shouldCompress)
         {
             if (!File.Exists(filename))
             {
@@ -60,13 +60,31 @@ namespace GPAK
 
             var fi = new FileInfo(filename);
 
+            // Write file name
             var fnLength = Convert.ToByte(Encoding.ASCII.GetByteCount(fi.Name));
             var fnContent = Encoding.ASCII.GetBytes(fi.Name);
-            var fSize = Convert.ToUInt32(fi.Length);
-            var fContent = File.ReadAllBytes(filename);
 
             _fileWriter.Write(fnLength);
             _fileWriter.Write(fnContent);
+
+            // Write file content
+            int fSize;
+            byte[] fContent = File.ReadAllBytes(filename);
+
+            if (shouldCompress)
+            {
+                var compressedFContent = GPakUtil.Compress(fContent);
+                fSize = compressedFContent.Length;
+                fContent = compressedFContent;
+                _fileWriter.Write('C');
+            }
+            else
+            {
+                fSize = Convert.ToInt32(fi.Length);
+                fContent = File.ReadAllBytes(filename);
+                _fileWriter.Write('N');
+            }
+
             _fileWriter.Write(fSize);
             _fileWriter.Write(fContent);
 
