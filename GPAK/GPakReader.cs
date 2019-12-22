@@ -8,16 +8,14 @@ namespace GPAK
     {
         private readonly string _packageFilename;
 
-        private BinaryReader _fileReader;
+        private readonly int _packageFileSize;
 
-        private bool _isPackageValid;
+        private readonly BinaryReader _packageFileReader;
 
-        private byte[] _packageBytes;
-
-        private const int _bufferSize = 4096;
-
-        private List<GPakEntry> _entries;
-
+        /// <summary>
+        /// For quick access when an entry is requested
+        /// </summary>
+        private readonly Dictionary<string, GPakEntry> _entryTable;
 
         public GPakReader(string filename)
         {
@@ -25,13 +23,12 @@ namespace GPAK
 
             if (File.Exists(_packageFilename))
             {
-                _fileReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
-                _packageBytes = ReadAllBytes();
-                _fileReader.Close();
+                _packageFileSize = (int)new FileInfo(_packageFilename).Length;
+                _packageFileReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
 
                 if (IsHeaderValid())
                 {
-                    _entries = new List<GPakEntry>();
+                    _entryTable = new Dictionary<string, GPakEntry>();
                     ReadEntries();
                 }
                 else
@@ -45,21 +42,81 @@ namespace GPAK
             }
         }
 
+        private bool IsHeaderValid()
+        {
+            var header = GPakUtil.GetBytesFromFile(_packageFileReader, 0, GPakUtil.FirstEntryOffset);
+            return GPakUtil.GetByteRangeAsString(header).Equals(GPakUtil.Header);
+        }
+
+        private void ReadEntries()
+        {
+            int i = GPakUtil.FirstEntryOffset;
+            while (i < _packageFileSize)
+            {
+                // Read 4 bytes to find the length of the entry's name
+                var entryNameLength = 
+                    GPakUtil.GetByteRangeAsInteger(GPakUtil.GetBytesFromFile(_packageFileReader, i, 4));
+                i += 4;
+
+                // Read ENTRY_NAME bytes to obtain it's name
+                var entryName = 
+                    GPakUtil.GetByteRangeAsString(GPakUtil.GetBytesFromFile(_packageFileReader, i,entryNameLength));
+                i += entryName.Length;
+
+                // Read 1 byte to check if the entry is compressed or not ("C" for compressed, "N" for not compressed)
+                var compressedFlag =
+                    GPakUtil.GetByteRangeAsString(GPakUtil.GetBytesFromFile(_packageFileReader, i, 1));
+                i += 1;
+                var isCompressed = compressedFlag == "C";
+
+                // Read 4 bytes to get the size of the entry in the package
+                var entryContentSize =
+                    GPakUtil.GetByteRangeAsInteger(GPakUtil.GetBytesFromFile(_packageFileReader, i, 4));
+                i += 4;
+
+                // Create a new entry based on the previously gathered info
+                _entryTable.Add(entryName, new GPakEntry(entryContentSize, isCompressed, i));
+
+                i += entryContentSize;
+            }
+
+            _packageFileReader.Close();
+        }
+
+        public byte[] GetEntryContent(string entryName)
+        {
+            var entry = _entryTable[entryName];
+
+            if (entry == null)
+            {
+                return null;
+            }
+
+            var extractReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
+
+            var result = entry.IsCompressed
+                ? GPakUtil.Decompress(GPakUtil.GetBytesFromFile(extractReader, entry.ContentOffset, entry.SizeInBytes))
+                : GPakUtil.GetBytesFromFile(extractReader, entry.ContentOffset, entry.SizeInBytes);
+
+            extractReader.Close();
+
+            return result;
+        }
+
         public void DumpInfo()
         {
-
-            /*Console.WriteLine($@"File Name: {_packageFilename}");
-            Console.WriteLine($@"File Size: {_packageBytes.Length} bytes");
-            Console.WriteLine($@"Number of Entries: {_entries.Count}");*/
+            Console.WriteLine($@"File Name: {_packageFilename}");
+            Console.WriteLine($@"Number of Entries: {_entryTable.Count}");
 
             Console.WriteLine("Entries:");
 
-            for (int i = 0; i < _entries.Count; i++)
+            foreach (var (name, entry) in _entryTable)
             {
-                Console.WriteLine($@"ENTRY #{i + 1}");
-                Console.WriteLine($@"Name: {_entries[i].Name}");
-                Console.WriteLine($@"Is Compressed: {_entries[i].IsCompressed}");
-                Console.WriteLine($@"Size: {_entries[i].SizeInBytes} bytes");
+                Console.WriteLine($@"ENTRY");
+                Console.WriteLine($@"Name: {name}");
+                Console.WriteLine($@"Is Compressed: {entry.IsCompressed}");
+                Console.WriteLine($@"Size: {entry.SizeInBytes} bytes");
+                Console.WriteLine($@"Content Offset in Package: {entry.ContentOffset}");
             }
         }
 
@@ -70,60 +127,20 @@ namespace GPAK
                 Directory.CreateDirectory(toDirectory);
             }
 
-            foreach (var entry in _entries)
-            {
-                var writer = new BinaryWriter(File.Open(Path.Combine(toDirectory, entry.Name), System.IO.FileMode.Create));
+            var extractReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
 
-                writer.Write(entry.IsCompressed ? GPakUtil.Decompress(entry.Content) : entry.Content);
+            foreach (var (name, entry) in _entryTable)
+            {
+                var writer = new BinaryWriter(File.Open(Path.Combine(toDirectory, name), System.IO.FileMode.Create));
+
+                writer.Write(entry.IsCompressed
+                    ? GPakUtil.Decompress(GPakUtil.GetBytesFromFile(extractReader, entry.ContentOffset, entry.SizeInBytes))
+                    : GPakUtil.GetBytesFromFile(extractReader, entry.ContentOffset, entry.SizeInBytes));
 
                 writer.Close();
             }
-        }
 
-        private byte[] ReadAllBytes()
-        {
-            var memStream = new MemoryStream();
-            var buffer = new byte[_bufferSize];
-
-            int count;
-            while ((count = _fileReader.Read(buffer, 0, buffer.Length)) != 0)
-            {
-                memStream.Write(buffer, 0, count);
-            }
-
-            return memStream.ToArray();
-        }
-
-        private bool IsHeaderValid()
-        {
-            return GPakUtil.GetByteRangeAsString(_packageBytes, 0, 3).Equals(GPakUtil.Header);
-        }
-
-        private void ReadEntries()
-        {
-            for (int i = GPakUtil.FirstEntryOffset; i < _packageBytes.Length; i++)
-            {
-                var entryNameLength = 
-                    GPakUtil.GetByteRangeAsInteger(_packageBytes, i, i);
-                
-                var entryName = 
-                    GPakUtil.GetByteRangeAsString(_packageBytes, i + 1, i + entryNameLength);
-                
-                var compressedFlag =
-                    GPakUtil.GetByteRangeAsString(_packageBytes, i + entryNameLength + 1, i + entryNameLength + 1);
-
-                var entryContentSize = 
-                    GPakUtil.GetByteRangeAsInteger(_packageBytes, i + entryNameLength + 2, i + entryNameLength + 5);
-                
-                var entryContent = 
-                    GPakUtil.GetByteRangeSubset(_packageBytes, i + entryNameLength + 6, entryContentSize);
-
-                i = i + entryNameLength + 5 + entryContentSize;
-
-                var isCompressed = compressedFlag == "C";
-
-                _entries.Add(new GPakEntry(entryNameLength, entryName, entryContentSize, entryContent, isCompressed));
-            }
+            extractReader.Close();
         }
     }
 }

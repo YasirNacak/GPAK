@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 
 namespace GPAK
 {
@@ -14,7 +15,7 @@ namespace GPAK
 
         public static string GetPackageFileName(string filename)
         {
-            if (!filename.EndsWith(FormatName))
+            if (!filename.ToUpper().EndsWith(FormatName))
             {
                 return filename + "." + FormatName;
             }
@@ -22,40 +23,24 @@ namespace GPAK
             return filename;
         }
 
-        public static string GetByteRangeAsString(byte[] data, int startByte, int endByte)
+        public static byte[] GetBytesFromFile(BinaryReader reader, int offset, int byteCount)
         {
-            var result = "";
+            var result = new byte[byteCount];
 
-            for (int i = startByte; i <= endByte; i++)
-            {
-                result += (char)data[i];
-            }
+            reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+            reader.Read(result, 0, byteCount);
 
             return result;
         }
 
-        public static int GetByteRangeAsInteger(byte[] data, int startByte, int endByte)
+        public static string GetByteRangeAsString(byte[] data)
         {
-            byte[] bytesToConvert = new byte[4];
-
-            int toConvertIndex = 0;
-
-            for (int i = startByte; i <= endByte; i++)
-            {
-                bytesToConvert[toConvertIndex] = data[i];
-                toConvertIndex++;
-            }
-
-            return BitConverter.ToInt32(bytesToConvert, 0);
+            return data.Aggregate("", (current, t) => current + (char) t);
         }
 
-        public static byte[] GetByteRangeSubset(byte[] data, int startIndex, int length)
+        public static int GetByteRangeAsInteger(byte[] data)
         {
-            byte[] subset = new byte[length];
-
-            Array.Copy(data, startIndex, subset, 0, length);
-
-            return subset;
+            return BitConverter.ToInt32(data, 0);
         }
 
         public static byte[] Compress(byte[] data)

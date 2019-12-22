@@ -79,7 +79,7 @@ namespace GPAK.Editor
                 PrintHelp();
             }
 
-            // Console.WriteLine("Operation Finished Successfully.");
+            Console.WriteLine("Operation Finished Successfully.");
             Console.ReadKey();
         }
 
@@ -103,7 +103,7 @@ namespace GPAK.Editor
 
         private static void PrintExtractModeInfo()
         {
-            Console.WriteLine("[-x] [package filename] For extracting package file to the current directory.");
+            Console.WriteLine("[-x] [package filename] [directory to extract (can be empty)] For extracting package file to the current or given directory.");
         }
     }
 }

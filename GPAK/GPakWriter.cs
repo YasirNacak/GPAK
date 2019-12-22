@@ -59,7 +59,7 @@ namespace GPAK
             var fi = new FileInfo(filename);
 
             // Write file name
-            var fnLength = Convert.ToByte(Encoding.ASCII.GetByteCount(fi.Name));
+            var fnLength = Encoding.ASCII.GetByteCount(fi.Name);
             var fnContent = Encoding.ASCII.GetBytes(fi.Name);
 
             _fileWriter.Write(fnLength);
@@ -67,7 +67,7 @@ namespace GPAK
 
             // Write file content
             int fSize;
-            byte[] fContent = File.ReadAllBytes(filename);
+            var fContent = File.ReadAllBytes(filename);
 
             if (shouldCompress)
             {
