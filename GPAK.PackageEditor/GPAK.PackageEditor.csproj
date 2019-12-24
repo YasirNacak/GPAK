@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>Gonzo Package Editor</AssemblyName>
+    <StartupObject>GPAK.PackageEditor.App</StartupObject>
+    <Authors>Yasir Nacak</Authors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GPAK\GPAK.csproj" />
+  </ItemGroup>
+
+</Project>

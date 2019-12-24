@@ -1,0 +1,38 @@
+﻿<Window x:Class="GPAK.PackageEditor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GPAK.PackageEditor"
+        mc:Ignorable="d"
+        Title="Gonzo Package Editor" Height="480" Width="640">
+
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static local:MainWindow.OpenFileCommand}" Executed="OnOpenFileCommandExecuted" />
+        <CommandBinding Command="{x:Static local:MainWindow.NewFileCommand}" Executed="OnNewFileCommandExecuted" />
+    </Window.CommandBindings>
+
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top" Height="20" VerticalAlignment="Top" BorderBrush="#FFABADB3" BorderThickness="1,1,1,1">
+                <MenuItem Header="File">
+                    <MenuItem Header="New" Click="OnNewMenuItemClicked"></MenuItem>
+                    <MenuItem Header="Open" Click="OnOpenMenuItemClicked"></MenuItem>
+                    <MenuItem Header="Exit" Click="OnExitMenuItemClicked"></MenuItem>
+                </MenuItem>
+                <MenuItem Header="Package">
+                    <MenuItem Header="Add Entry">
+                        <MenuItem Header="With Compression" Click="OnAddEntryCompressedMenuItemClicked"></MenuItem>
+                        <MenuItem Header="Without Compression" Click="OnAddEntryNoCompressionMenuItemClicked"></MenuItem>
+                    </MenuItem>
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+        <ListBox Name="PackageContentsListBox" Margin="0,20,0,30" MinWidth="250" BorderThickness="1,0,1,0"/>
+        <StatusBar Height="30" VerticalAlignment="Bottom" BorderBrush="#FFABADB3" BorderThickness="1,1,1,1">
+            <Label Name="PackageNameLabel" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center" Width="Auto"/>
+            <Label Name="PackageEntryCountLabel" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center" Width="Auto"/>
+            <Label Name="PackageSizeLabel" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center" Width="Auto"/>
+        </StatusBar>
+    </Grid>
+</Window>
