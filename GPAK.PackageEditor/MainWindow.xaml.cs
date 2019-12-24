@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using Microsoft.Win32;
 
 // TODO (yasir): fix conflicts between winforms and win32 dialogs
@@ -54,7 +56,9 @@ namespace GPAK.PackageEditor
             var saveFileDialog = new SaveFileDialog { DefaultExt = "GPAK", Filter = "Gonzo Package Files (*.GPAK)|*.GPAK", Title = "Save New Package As"};
 
             if (saveFileDialog.ShowDialog() == false) return;
-            
+
+            PackageData.Writer = new GPakWriter(saveFileDialog.FileName);
+
             LoadPackage(saveFileDialog.FileName);
         }
 
@@ -63,7 +67,7 @@ namespace GPAK.PackageEditor
             var openFileDialog = new OpenFileDialog {Filter = "Gonzo Package Files (*.GPAK)|*.GPAK", Title = "Select a Package To Open" };
             
             if (openFileDialog.ShowDialog() == false) return;
-            
+
             LoadPackage(openFileDialog.FileName);
         }
 
@@ -104,12 +108,39 @@ namespace GPAK.PackageEditor
 
             if (openFileDialog.ShowDialog() == false) return;
             
-            foreach (var fileName in openFileDialog.FileNames)
-            {
-                PackageData.Writer.AddEntry(fileName, shouldCompress);
-            }
+            var loadingWindow = new LoadingWindow();
 
-            LoadPackage(PackageData.Reader.PackagePath);
+            loadingWindow.Show();
+            
+            var thread = new Thread(() =>
+            {
+                Dispatcher?.Invoke(() =>
+                {
+                    IsEnabled = false;
+                    loadingWindow.LoadingProgressBar.Minimum = 0;
+                    loadingWindow.LoadingProgressBar.Maximum = openFileDialog.FileNames.Length; 
+                });
+
+                foreach (var filename in openFileDialog.FileNames)
+                {
+                    Dispatcher?.Invoke(() =>
+                    {
+                        loadingWindow.CurrentItemLabel.Content = "Adding " + filename;
+                        loadingWindow.LoadingProgressBar.Value++;
+                    }, DispatcherPriority.ContextIdle);
+                    PackageData.Writer.AddEntry(filename, shouldCompress);
+                }
+
+                Dispatcher?.Invoke(() =>
+                {
+                    loadingWindow.Close();
+                    IsEnabled = true;
+                    LoadPackage(PackageData.Reader.PackagePath);
+                });
+
+            });
+
+            thread.Start();
         }
 
         private void LoadPackage(string packagePath)
