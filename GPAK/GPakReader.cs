@@ -6,9 +6,13 @@ namespace GPAK
 {
     public class GPakReader
     {
-        private readonly string _packageFilename;
+        public string PackagePath { get; }
 
-        private readonly int _packageFileSize;
+        public string PackageName { get; }
+
+        public int PackageFileSize { get; }
+
+        public int EntryCount { get; private set; }
 
         private readonly BinaryReader _packageFileReader;
 
@@ -19,12 +23,13 @@ namespace GPAK
 
         public GPakReader(string filename)
         {
-            _packageFilename = GPakUtil.GetPackageFileName(filename);
+            PackagePath = GPakUtil.GetPackageFileName(filename);
+            PackageName = Path.GetFileName(PackagePath);
 
-            if (File.Exists(_packageFilename))
+            if (File.Exists(PackagePath))
             {
-                _packageFileSize = (int)new FileInfo(_packageFilename).Length;
-                _packageFileReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
+                PackageFileSize = (int)new FileInfo(PackagePath).Length;
+                _packageFileReader = new BinaryReader(File.Open(PackagePath, System.IO.FileMode.Open));
 
                 if (IsHeaderValid())
                 {
@@ -38,7 +43,7 @@ namespace GPAK
             }
             else
             {
-                throw new FileNotFoundException(_packageFilename + " does not found.");
+                throw new FileNotFoundException(PackagePath + " does not found.");
             }
         }
 
@@ -51,7 +56,7 @@ namespace GPAK
         private void ReadEntries()
         {
             int i = GPakUtil.FirstEntryOffset;
-            while (i < _packageFileSize)
+            while (i < PackageFileSize)
             {
                 // Read 4 bytes to find the length of the entry's name
                 var entryNameLength = 
@@ -78,6 +83,8 @@ namespace GPAK
                 _entryTable.Add(entryName, new GPakEntry(entryContentSize, isCompressed, i));
 
                 i += entryContentSize;
+
+                EntryCount++;
             }
 
             _packageFileReader.Close();
@@ -92,7 +99,7 @@ namespace GPAK
                 return null;
             }
 
-            var extractReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
+            var extractReader = new BinaryReader(File.Open(PackagePath, System.IO.FileMode.Open));
 
             var result = entry.IsCompressed
                 ? GPakUtil.Decompress(GPakUtil.GetBytesFromFile(extractReader, entry.ContentOffset, entry.SizeInBytes))
@@ -103,9 +110,21 @@ namespace GPAK
             return result;
         }
 
+        public List<string> GetAllEntryNames()
+        {
+            var result = new List<string>();
+
+            foreach (var (name, entry) in _entryTable)
+            {
+                result.Add(name);
+            }
+
+            return result;
+        }
+
         public void DumpInfo()
         {
-            Console.WriteLine($@"File Name: {_packageFilename}");
+            Console.WriteLine($@"File Name: {PackagePath}");
             Console.WriteLine($@"Number of Entries: {_entryTable.Count}");
 
             Console.WriteLine("Entries:");
@@ -120,14 +139,14 @@ namespace GPAK
             }
         }
 
-        public void Extract(string toDirectory = "")
+        public void ExtractAll(string toDirectory = "")
         {
             if (toDirectory != "" && !Directory.Exists(toDirectory))
             {
                 Directory.CreateDirectory(toDirectory);
             }
 
-            var extractReader = new BinaryReader(File.Open(_packageFilename, System.IO.FileMode.Open));
+            var extractReader = new BinaryReader(File.Open(PackagePath, System.IO.FileMode.Open));
 
             foreach (var (name, entry) in _entryTable)
             {
@@ -141,6 +160,24 @@ namespace GPAK
             }
 
             extractReader.Close();
+        }
+
+        public void ExtractOne(string entryName, string toDirectory = "")
+        {
+            if (toDirectory != "" && !Directory.Exists(toDirectory))
+            {
+                Directory.CreateDirectory(toDirectory);
+            }
+
+            var entryContent = GetEntryContent(entryName);
+
+            if (entryContent == null) return;
+            
+            var writer = new BinaryWriter(File.Open(Path.Combine(toDirectory, entryName), System.IO.FileMode.Create));
+
+            writer.Write(entryContent);
+
+            writer.Close();
         }
     }
 }

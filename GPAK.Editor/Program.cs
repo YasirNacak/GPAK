@@ -67,7 +67,7 @@ namespace GPAK.Editor
 
                 if (args.Length == 3 || args.Length == 2)
                 {
-                    gpReader.Extract(dirToExtract);
+                    gpReader.ExtractAll(dirToExtract);
                 }
                 else
                 {
