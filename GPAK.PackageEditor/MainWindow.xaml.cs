@@ -14,6 +14,7 @@ using Microsoft.Win32;
 
 // TODO (yasir): fix conflicts between winforms and win32 dialogs
 using Application = System.Windows.Application;
+using Cursors = System.Windows.Input.Cursors;
 using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
@@ -173,10 +174,14 @@ namespace GPAK.PackageEditor
                 
                 if(folderBrowserDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
+                Mouse.OverrideCursor = Cursors.Wait;
+
                 foreach (ListBoxItem entry in PackageContentsListBox.SelectedItems)
                 {
                     PackageData.Reader.ExtractOne(entry.Content.ToString(), folderBrowserDialog.SelectedPath);
                 }
+
+                Mouse.OverrideCursor = null;
             };
             
             cMenu.Items.Add(extractMenuItem);
