@@ -8,10 +8,19 @@
     <AssemblyName>GZPackageEditor</AssemblyName>
     <StartupObject>GPAK.PackageEditor.App</StartupObject>
     <Authors>Yasir Nacak</Authors>
+    <Description>GPAK File Editor GUI</Description>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GPAK\GPAK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
