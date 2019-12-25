@@ -5,7 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>Gonzo Package Editor</AssemblyName>
+    <AssemblyName>GZPackageEditor</AssemblyName>
     <StartupObject>GPAK.PackageEditor.App</StartupObject>
     <Authors>Yasir Nacak</Authors>
   </PropertyGroup>

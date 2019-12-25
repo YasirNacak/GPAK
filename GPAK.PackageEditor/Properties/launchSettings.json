@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "GPAK.Editor": {
+    "GPAK.PackageEditor": {
       "commandName": "Project"
     }
   }
